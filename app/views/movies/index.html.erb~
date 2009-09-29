@@ -1,0 +1,30 @@
+<h1>Listing movies</h1>
+
+<table>
+  <tr>
+    <th>Title</th>
+    <th>Date</th>
+    <th>Time</th>
+    <th>Duration</th>
+    <th>Picture_url</th>
+    <th>Room</th>
+  </tr>
+
+<% for xxx in @movies %>
+  <tr>
+    <td><%=h movie.title %></td>
+    <td><%=h movie.date %></td>	
+    <td><%=h movie.time.to_s(:def) %></td>
+    <td><%=h movie.duration %></td>
+    <td><%=h movie.picture_url %></td>
+    <td><%=h movie.room_id %></td>
+    <td><%= link_to 'Show', movie %></td>
+    <td><%= link_to 'Edit', edit_movie_path(movie) %></td>
+    <td><%= link_to 'Destroy', movie, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New movie', new_movie_path %>

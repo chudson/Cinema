@@ -1,0 +1,17 @@
+development:
+  adapter: mysql
+  database: cinema_development
+  username: root
+  password: masters1
+  host: localhost
+
+test:
+  development
+
+production:
+  adapter: mysql
+  database: baza
+  username: root
+  password: costam
+  host: localhost
+

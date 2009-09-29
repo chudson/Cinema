@@ -1,0 +1,38 @@
+<h1>Editing movie</h1>
+
+<% form_for(@movie) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :title %><br />
+    <%= f.text_field :title %>
+  </p>
+  <p>
+    <%= f.label :date %><br />
+ 	<%= select_date() %>
+  </p>
+  <p>
+    <%= f.label :time %><br />
+    <%= f.time_select :time %>
+  </p>
+  <p>
+    <%= f.label :duration %><br />
+    <%= f.text_field :duration %>
+  </p>
+  <p>
+    <%= f.label :picture_url %><br />
+    <%= f.text_field :picture_url %>
+  </p>
+  <p>
+    <%= f.label :room_id %><br />
+   <%= f.select :room_id,  Room.find(:all).collect {|d| [ d.name,d.id ] } %>
+  </p>
+  <p>
+    <%= f.submit "Update" %>
+  </p>
+<% end %>
+
+<%= link_to 'Back to previous', @movie %> |
+<%= link_to 'Back to rooms', rooms_path %> |
+<%= link_to 'Delete movie', @movie, :confirm => 'Are you sure?', :method => :delete %> | 
+<%= link_to 'New movie', new_movie_path %>

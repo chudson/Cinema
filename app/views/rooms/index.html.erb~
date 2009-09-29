@@ -1,0 +1,34 @@
+<h1>Listing rooms</h1>
+
+<table>
+  <tr>
+    <th>Name</th>
+  </tr>
+
+<% for room in @rooms %>
+  <tr>
+    <td><%=h room.name %></td>
+    <td><%= link_to 'Show', room %></td>
+    <td><%= link_to 'Edit', edit_room_path(room) %></td>
+    <td><%= link_to 'Destroy', room_path, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% room.movies.each do |movie| %>
+<tr>
+
+  <td>
+
+ <a href=" <%="/movies/"+movie.id.to_s()%>"  ><%=h movie.title %></a>
+</td>
+    <td><%=h movie.date %></td>
+
+    <td><%=h movie.time.to_s(:def) %></td>
+   
+    
+</tr>	
+<%end %>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New room', new_room_path %>

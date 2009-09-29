@@ -1,0 +1,42 @@
+<img class="list-image" src="<%= @movie.picture_url %>" />
+<p>
+  <b>Title:</b>
+  <%=h @movie.title %>
+</p>
+
+<p>
+  <b>Date:</b>
+  <%=h @movie.date %>
+</p>
+
+<p>
+  <b>Time:</b>
+  <%=h @movie.time.to_s(:def) %>
+</p>
+<p>
+  <b>Duration:</b>
+  <%=h @movie.duration %>
+</p>
+
+<p> 
+</p>
+
+<p>
+  <b>Room:</b>
+  <%=h @movie.room_id %>
+</p>
+<table cellpadding="5" cellspacing="0" >
+<% for movie in @movies %>
+
+<tr>
+	<td><%=movie.title%> </td>	<td><%=movie.date%></td>  <td>movie.time</td>  <td>movie.room_id</td>
+</tr>
+<tr>
+	<td>...</td>	<td>...</td>
+</tr>
+<% end %>
+</table>
+
+<%= link_to 'Edit', edit_movie_path(@movie) %> |
+<%= link_to 'Back to rooms', rooms_path %> 
+
