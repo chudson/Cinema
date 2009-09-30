@@ -1,6 +1,4 @@
 ActionController::Routing::Routes.draw do |map|
-  map.resources :photos
-
   map.resources :rooms, :has_many => :movies
 
   map.resources :movies

@@ -6,7 +6,11 @@ development:
   host: localhost
 
 test:
-  development
+  adapter: mysql
+  database: test_development
+  username: root
+  password: masters1
+  host: localhost
 
 production:
   adapter: mysql

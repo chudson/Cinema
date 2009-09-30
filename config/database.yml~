@@ -1,4 +1,4 @@
-test_mysql:
+development:
   adapter: mysql
   database: cinema_development
   username: root
@@ -6,7 +6,11 @@ test_mysql:
   host: localhost
 
 test:
-  test_mysql
+  adapter: mysql
+  database: test_development
+  username: root
+  password: masters1
+  host: localhost
 
 production:
   adapter: mysql
