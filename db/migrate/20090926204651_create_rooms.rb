@@ -1,6 +1,6 @@
 class CreateRooms < ActiveRecord::Migration
   def self.up
-    create_table :rooms do |t|
+    create_table :rooms  do |t|
     t.column :name, :text, :null => false 
       t.timestamps
     end

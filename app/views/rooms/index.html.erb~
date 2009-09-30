@@ -16,7 +16,7 @@
 
   <td>
 
- <a href=" <%="/movies/"+movie.id.to_s()%><%=h movie.title %></a>
+ <a href=" <%="/movies/"+movie.id.to_s()%>"  ><%=h movie.title %></a>
 </td>
     <td><%=h movie.date %></td>
 

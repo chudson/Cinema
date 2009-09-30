@@ -1,0 +1,21 @@
+Unable to load photo, underlying cause no such file to load -- photo 
+
+ /usr/lib/ruby/1.8/rubygems/custom_require.rb:31:in `gem_original_require'
+/usr/lib/ruby/1.8/rubygems/custom_require.rb:31:in `require'
+/home/chudy/work/cinema/vendor/rails/activesupport/lib/active_support/dependencies.rb:155:in `require'
+/home/chudy/work/cinema/vendor/rails/activesupport/lib/active_support/dependencies.rb:262:in `require_or_load'
+/home/chudy/work/cinema/vendor/rails/activesupport/lib/active_support/dependencies.rb:221:in `depend_on'
+/home/chudy/work/cinema/vendor/rails/activesupport/lib/active_support/dependencies.rb:133:in `require_dependency'
+/home/chudy/work/cinema/vendor/rails/activerecord/lib/active_record/fixtures.rb:856:in `try_to_load_dependency'
+/home/chudy/work/cinema/vendor/rails/activerecord/lib/active_record/fixtures.rb:871:in `require_fixture_classes'
+/home/chudy/work/cinema/vendor/rails/activerecord/lib/active_record/fixtures.rb:868:in `each'
+/home/chudy/work/cinema/vendor/rails/activerecord/lib/active_record/fixtures.rb:868:in `require_fixture_classes'
+/home/chudy/work/cinema/vendor/rails/activerecord/lib/active_record/fixtures.rb:851:in `fixtures'
+./test/test_helper.rb:35
+./test/functional/rooms_controller_test.rb:1:in `require'
+./test/functional/rooms_controller_test.rb:1
+/usr/lib/ruby/1.8/rake/rake_test_loader.rb:5:in `load'
+/usr/lib/ruby/1.8/rake/rake_test_loader.rb:5
+/usr/lib/ruby/1.8/rake/rake_test_loader.rb:5:in `each'
+/usr/lib/ruby/1.8/rake/rake_test_loader.rb:5
+  [4;36;1mSQL (0.2ms)[0m   [0;1mSET SQL_AUTO_IS_NULL=0[0m

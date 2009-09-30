@@ -2,8 +2,7 @@ class Movie < ActiveRecord::Base
 belongs_to :room
 validates_presence_of :title, :date,:time ,:duration,:photo,:room_id
 validates_numericality_of :room_id , :duration
-validates_format_of :photo_file_name,
-:with => %r{\.(gif|jpg|jpeg|png)$}i,
+validates_format_of :photo_file_name,:with => %r{\.(gif|jpg|jpeg|png)$}i,
 :message => "must be a URL for a GIF, JPG,JPEG or PNG image"
 # Paperclip
 has_attached_file :photo,

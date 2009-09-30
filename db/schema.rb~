@@ -12,22 +12,23 @@
 ActiveRecord::Schema.define(:version => 20090930103329) do
 
   create_table "movies", :force => true do |t|
-    t.string   "title",              :null => false
-    t.date     "date",               :null => false
-    t.time     "time",               :null => false
-    t.integer  "duration",           :null => false
-    t.integer  "room_id",            :null => false
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string   "photo_file_name"
-    t.string   "photo_content_type"
-    t.integer  "photo_file_size"
+    t.string  "title",              :limit => 60, :null => false
+    t.date    "date",                             :null => false
+    t.time    "time",                             :null => false
+    t.integer "duration",                         :null => false
+    t.text    "picture_url",                      :null => false
+    t.integer "room_id",                          :null => false
+    t.string  "photo_file_name"
+    t.string  "photo_content_type"
+    t.integer "photo_file_size"
   end
 
+  add_index "movies", ["id"], :name => "id", :unique => true
+  add_index "movies", ["id"], :name => "id_2"
+  add_index "movies", ["room_id"], :name => "rooms_id"
+
   create_table "rooms", :force => true do |t|
-    t.text     "name",       :null => false
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.text "name", :null => false
   end
 
 end

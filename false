@@ -1,0 +1,3 @@
+(in /home/chudy/work/cinema)
+==  CreateRooms: migrating ====================================================
+-- create_table(:rooms)
