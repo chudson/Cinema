@@ -1,0 +1,57 @@
+<p>
+  <b>Room:</b>
+  <%=h @rooms.id %>
+</p>
+
+    
+<p>
+  <b>Title:</b>
+  <%=h @rooms.name %>
+</p>
+<table>
+<tr>
+<td><b> List of movies played yestarday</b><td>
+</tr>
+<% @rooms.movies.each do |movie| %>
+<%if movie.date==@movies_yestarday%>
+
+<tr>
+    <td><%=h movie.title %></td>
+    <td><%=h movie.date %></td>
+    <td><%=h movie.time.to_s(:def) %></td>      
+</tr>	
+
+<%end %>
+<%end %>
+
+<tr>
+<td><b> List of movies played today </b><td>
+</tr>
+<% @rooms.movies.each do |movie| %>
+<%if movie.date==@movies_today%>
+<tr>
+    <td><%=h movie.title %></td>
+    <td><%=h movie.date %></td>
+    <td><%=h movie.time.to_s(:def) %></td>      
+</tr>
+	
+<%end %>
+<%end %>
+
+
+<tr>
+<td><b> List of movies played tommorow</b></td>
+</tr>
+<% @rooms.movies.each do |movie| %>
+<%if movie.date==@movies_tommorow%>
+<tr>
+    <td><%=h movie.title %></td>
+    <td><%=h movie.date %></td>
+    <td><%=h movie.time.to_s(:def) %></td>      
+</tr>	
+<%end %>
+<%end %>
+<tr>
+<tb><%= link_to 'Back', :back %></tb>
+</tr>
+</table>

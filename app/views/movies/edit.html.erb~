@@ -1,6 +1,5 @@
 <h1>Editing movie</h1>
-
-<% form_for(@movie) do |f| %>
+<% form_for(@movie, :html => { :multipart => true}) do |f| %>
   <%= f.error_messages %>
 
   <p>
@@ -9,7 +8,7 @@
   </p>
   <p>
     <%= f.label :date %><br />
- 	<%= select_date() %>
+    <%= f.date_select :date %>
   </p>
   <p>
     <%= f.label :time %><br />
@@ -19,16 +18,22 @@
     <%= f.label :duration %><br />
     <%= f.text_field :duration %>
   </p>
+ <p>
+    <%= f.label :photo %><br />
+  	<%= f.file_field :photo%>
+  </p>
+
   <p>
     <%= f.label :picture_url %><br />
     <%= f.text_field :picture_url %>
+
   </p>
   <p>
     <%= f.label :room_id %><br />
-   <%= f.select :room_id,  Room.find(:all).collect {|d| [ d.name ] } %>
+   <%= f.select :room_id,  Room.find(:all).collect {|d| [ d.name,d.id ] } %>
   </p>
   <p>
-    <%= f.submit "Update" %>
+    <%= f.submit "Create" %>
   </p>
 <% end %>
 

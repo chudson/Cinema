@@ -1,4 +1,11 @@
-<img class="list-image" src="<%= @movie.picture_url %>" />
+<%= image_tag @movie.photo.url(:thumb) %>
+
+<p>
+  <b>Room:</b>
+  <%=h @movie.room_id %>
+</p>
+
+    
 <p>
   <b>Title:</b>
   <%=h @movie.title %>
@@ -6,6 +13,7 @@
 
 <p>
   <b>Date:</b>
+  
   <%=h @movie.date %>
 </p>
 
@@ -26,14 +34,17 @@
   <%=h @movie.room_id %>
 </p>
 <table cellpadding="5" cellspacing="0" >
-<% for movie in @movies %>
-
+  <tr>
+<td>Title</td><td>Date</td><td>Time</td><td>Room</td>
+<% for movie in @movies%>
+<%if @movie.title.downcase==movie.title.downcase%>
 <tr>
-	<td><%=movie.title%> </td>	<td><%=movie.date%></td>  <td>movie.time</td>  <td>movie.room_id</td>
+<td><%=movie.title%> </td>	
+<td><%=movie.date%></td>  
+<td><%=movie.time.to_s(:def)%></td>
+<td><a href=" <%="/movies/list/"+movie.room_id.to_s()%>"  ><%=h movie.room_id %></a></td>
 </tr>
-<tr>
-	<td>...</td>	<td>...</td>
-</tr>
+<%end %>
 <% end %>
 </table>
 

@@ -1,7 +1,7 @@
 
 <h1>New movie</h1>
-<img src="<%=@movie.picture_url%>"> 
-<% form_for(@movie) do |f| %>
+
+<% form_for(@movie, :html => { :multipart => true}) do |f| %>
   <%= f.error_messages %>
 
   <p>
@@ -20,14 +20,19 @@
     <%= f.label :duration %><br />
     <%= f.text_field :duration %>
   </p>
+ <p>
+    <%= f.label :photo %><br />
+  	<%= f.file_field :photo%>
+  </p>
+
   <p>
     <%= f.label :picture_url %><br />
     <%= f.text_field :picture_url %>
 
   </p>
   <p>
-    <%= f.label :rooms_id %><br />
-    <%= f.text_field :room_id %>
+    <%= f.label :room_id %><br />
+   <%= f.select :room_id,  Room.find(:all).collect {|d| [ d.name,d.id ] } %>
   </p>
   <p>
     <%= f.submit "Create" %>
