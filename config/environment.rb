@@ -6,9 +6,6 @@
 # Specifies gem version of Rails to use when vendor/rails is not present
 RAILS_GEM_VERSION = '2.3.4' unless defined? RAILS_GEM_VERSION
 
-require 'acts_as_ferret'
-ActsAsFerret.index_dir = "#{RAILS_ROOT}/tmp/index"
-
 # Bootstrap the Rails environment, frameworks, and default configuration
 require File.join(File.dirname(__FILE__), 'boot')
 
@@ -77,3 +74,6 @@ Rails::Initializer.run do |config|
 end
 ActiveSupport::CoreExtensions::Time::Conversions::DATE_FORMATS.merge!(
   :def => "%H:%M")
+require 'acts_as_ferret'
+ActsAsFerret.index_dir = "#{RAILS_ROOT}/tmp/index"
+

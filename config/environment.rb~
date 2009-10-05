@@ -74,3 +74,7 @@ Rails::Initializer.run do |config|
 end
 ActiveSupport::CoreExtensions::Time::Conversions::DATE_FORMATS.merge!(
   :def => "%H:%M")
+
+require 'acts_as_ferret'
+ActsAsFerret.index_dir = "#{RAILS_ROOT}/tmp/index"
+
