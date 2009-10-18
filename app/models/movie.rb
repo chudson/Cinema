@@ -7,12 +7,10 @@ validates_format_of :photo_file_name,:with => %r{\.(gif|jpg|jpeg|png)$}i,
 # Paperclip
 has_attached_file :photo,
 :storage => :database;
-  :styles => {
-    :thumb=> "100x100#",
-    :small  => "150x150>",
-    :medium => "300x300>",
-    :large =>   "400x400>" }
 :url => '/:class/:id/:attachment?style=:style'
+  :styles => {
+    :thumb=> "100x100#" }
+
 	
 has_attached_file :photo, :default_url => "Missing photo Please add one"
 protected
