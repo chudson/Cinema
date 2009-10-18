@@ -33,12 +33,13 @@ module Paperclip
       def to_file style = default_style
         @queued_for_write[style] || (File.new(path(style), 'rb') if exists?(style))
       end
+      alias_method :to_io, :to_file
 
       def flush_writes #:nodoc:
         @queued_for_write.each do |style, file|
           file.close
           FileUtils.mkdir_p(File.dirname(path(style)))
-          log("saving #{path(style)}")
+          logger.info("[paperclip] saving #{path(style)}")
           FileUtils.mv(file.path, path(style))
           FileUtils.chmod(0644, path(style))
         end
@@ -48,7 +49,7 @@ module Paperclip
       def flush_deletes #:nodoc:
         @queued_for_delete.each do |path|
           begin
-            log("deleting #{path}")
+            logger.info("[paperclip] deleting #{path}")
             FileUtils.rm(path) if File.exist?(path)
           rescue Errno::ENOENT => e
             # ignore file-not-found, let everything else pass
@@ -61,7 +62,7 @@ module Paperclip
           rescue Errno::EEXIST, Errno::ENOTEMPTY, Errno::ENOENT, Errno::EINVAL, Errno::ENOTDIR
             # Stop trying to remove parent directories
           rescue SystemCallError => e
-            log("There was an unexpected error while deleting directories: #{e.class}")
+            logger.info("[paperclip] There was an unexpected error while deleting directories: #{e.class}")
             # Ignore it
           end
         end
@@ -95,9 +96,9 @@ module Paperclip
     # * +s3_permissions+: This is a String that should be one of the "canned" access
     #   policies that S3 provides (more information can be found here:
     #   http://docs.amazonwebservices.com/AmazonS3/2006-03-01/RESTAccessPolicy.html#RESTCannedAccessPolicies)
-    #   The default for Paperclip is :public_read.
+    #   The default for Paperclip is "public-read".
     # * +s3_protocol+: The protocol for the URLs generated to your S3 assets. Can be either 
-    #   'http' or 'https'. Defaults to 'http' when your :s3_permissions are :public_read (the
+    #   'http' or 'https'. Defaults to 'http' when your :s3_permissions are 'public-read' (the
     #   default), and 'https' when your :s3_permissions are anything else.
     # * +s3_headers+: A hash of headers such as {'Expires' => 1.year.from_now.httpdate}
     # * +bucket+: This is the name of the S3 bucket that will store your files. Remember
@@ -127,37 +128,37 @@ module Paperclip
     #   separate parts of your file name.
     module S3
       def self.extended base
-        begin
-          require 'aws/s3'
-        rescue LoadError => e
-          e.message << " (You may need to install the aws-s3 gem)"
-          raise e
-        end
-
+        require 'right_aws'
         base.instance_eval do
           @s3_credentials = parse_credentials(@options[:s3_credentials])
           @bucket         = @options[:bucket]         || @s3_credentials[:bucket]
           @bucket         = @bucket.call(self) if @bucket.is_a?(Proc)
           @s3_options     = @options[:s3_options]     || {}
-          @s3_permissions = @options[:s3_permissions] || :public_read
-          @s3_protocol    = @options[:s3_protocol]    || (@s3_permissions == :public_read ? 'http' : 'https')
+          @s3_permissions = @options[:s3_permissions] || 'public-read'
+          @s3_protocol    = @options[:s3_protocol]    || (@s3_permissions == 'public-read' ? 'http' : 'https')
           @s3_headers     = @options[:s3_headers]     || {}
           @s3_host_alias  = @options[:s3_host_alias]
           @url            = ":s3_path_url" unless @url.to_s.match(/^:s3.*url$/)
-          AWS::S3::Base.establish_connection!( @s3_options.merge(
-            :access_key_id => @s3_credentials[:access_key_id],
-            :secret_access_key => @s3_credentials[:secret_access_key]
-          ))
         end
-        Paperclip.interpolates(:s3_alias_url) do |attachment, style|
+        base.class.interpolations[:s3_alias_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://#{attachment.s3_host_alias}/#{attachment.path(style).gsub(%r{^/}, "")}"
         end
-        Paperclip.interpolates(:s3_path_url) do |attachment, style|
+        base.class.interpolations[:s3_path_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://s3.amazonaws.com/#{attachment.bucket_name}/#{attachment.path(style).gsub(%r{^/}, "")}"
         end
-        Paperclip.interpolates(:s3_domain_url) do |attachment, style|
+        base.class.interpolations[:s3_domain_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://#{attachment.bucket_name}.s3.amazonaws.com/#{attachment.path(style).gsub(%r{^/}, "")}"
         end
+      end
+
+      def s3
+        @s3 ||= RightAws::S3.new(@s3_credentials[:access_key_id],
+                                 @s3_credentials[:secret_access_key],
+                                 @s3_options)
+      end
+
+      def s3_bucket
+        @s3_bucket ||= s3.bucket(@bucket, true, @s3_permissions)
       end
 
       def bucket_name
@@ -170,15 +171,11 @@ module Paperclip
 
       def parse_credentials creds
         creds = find_credentials(creds).stringify_keys
-        (creds[RAILS_ENV] || creds).symbolize_keys
+        (creds[ENV['RAILS_ENV']] || creds).symbolize_keys
       end
       
       def exists?(style = default_style)
-        if original_filename
-          AWS::S3::S3Object.exists?(path(style), bucket_name)
-        else
-          false
-        end
+        s3_bucket.key(path(style)) ? true : false
       end
 
       def s3_protocol
@@ -188,24 +185,18 @@ module Paperclip
       # Returns representation of the data of the file assigned to the given
       # style, in the format most representative of the current storage.
       def to_file style = default_style
-        return @queued_for_write[style] if @queued_for_write[style]
-        file = Tempfile.new(path(style))
-        file.write(AWS::S3::S3Object.value(path(style), bucket_name))
-        file.rewind
-        return file
+        @queued_for_write[style] || s3_bucket.key(path(style))
       end
+      alias_method :to_io, :to_file
 
       def flush_writes #:nodoc:
         @queued_for_write.each do |style, file|
           begin
-            log("saving #{path(style)}")
-            AWS::S3::S3Object.store(path(style),
-                                    file,
-                                    bucket_name,
-                                    {:content_type => instance_read(:content_type),
-                                     :access => @s3_permissions,
-                                    }.merge(@s3_headers))
-          rescue AWS::S3::ResponseError => e
+            logger.info("[paperclip] saving #{path(style)}")
+            key = s3_bucket.key(path(style))
+            key.data = file
+            key.put(nil, @s3_permissions, {'Content-type' => instance_read(:content_type)}.merge(@s3_headers))
+          rescue RightAws::AwsError => e
             raise
           end
         end
@@ -215,9 +206,11 @@ module Paperclip
       def flush_deletes #:nodoc:
         @queued_for_delete.each do |path|
           begin
-            log("deleting #{path}")
-            AWS::S3::S3Object.delete(path, bucket_name)
-          rescue AWS::S3::ResponseError
+            logger.info("[paperclip] deleting #{path}")
+            if file = s3_bucket.key(path)
+              file.delete
+            end
+          rescue RightAws::AwsError
             # Ignore this.
           end
         end
@@ -227,9 +220,9 @@ module Paperclip
       def find_credentials creds
         case creds
         when File
-          YAML::load(ERB.new(File.read(creds.path)).result)
+          YAML.load_file(creds.path)
         when String
-          YAML::load(ERB.new(File.read(creds)).result)
+          YAML.load_file(creds)
         when Hash
           creds
         else
@@ -239,5 +232,201 @@ module Paperclip
       private :find_credentials
 
     end
+
+    # Store files in a database.
+    # 
+    # Usage is identical to the file system storage version, except:
+    # 
+    # 1. In your model specify the "database" storage option; for example:
+    #   has_attached_file :avatar, :storage => :database
+    # 
+    # 2. The file will be stored in a column called [attachment name]_file (e.g. "avatar_file") by default.
+    # 
+    # To specify a different column name, use :column, like this:
+    #   has_attached_file :avatar, :storage => :database, :column => 'avatar_data'
+    # 
+    # If you have defined different styles, these files will be stored in additional columns called
+    # [attachment name]_[style name]_file (e.g. "avatar_thumb_file") by default.
+    # 
+    # To specify different column names for styles, use :column in the style definition, like this:
+    #   has_attached_file :avatar,
+    #                     :storage => :database,
+    #                     :styles => { 
+    #                       :medium => {:geometry => "300x300>", :column => 'medium_file'},
+    #                       :thumb => {:geometry => "100x100>", :column => 'thumb_file'}
+    #                     }
+    # 
+    # 3. You need to create these new columns in your migrations or you'll get an exception. Example:
+    #   add_column :users, :avatar_file, :binary
+    #   add_column :users, :avatar_medium_file, :binary
+    #   add_column :users, :avatar_thumb_file, :binary
+    # 
+    # Note the "binary" migration will not work for the LONGBLOB type in MySQL for the
+    # file_contents column. You may need to craft a SQL statement for your migration,
+    # depending on which database server you are using. Here's an example migration for MySQL:
+    #   execute 'ALTER TABLE users ADD COLUMN avatar_file LONGBLOB'
+    #   execute 'ALTER TABLE users ADD COLUMN avatar_medium_file LONGBLOB'
+    #   execute 'ALTER TABLE users ADD COLUMN avatar_thumb_file LONGBLOB'
+    # 
+    # 4. To avoid performance problems loading all of the BLOB columns every time you access
+    # your ActiveRecord object, a class method is provided on your model called
+    # “select_without_file_columns_for.” This is set to a :select scope hash that will
+    # instruct ActiveRecord::Base.find to load all of the columns except the BLOB/file data columns.
+    # 
+    # If you’re using Rails 2.3, you can specify this as a default scope:
+    #   default_scope select_without_file_columns_for(:avatar)
+    # 
+    # Or if you’re using Rails 2.1 or 2.2 you can use it to create a named scope:
+    #   named_scope :without_file_data, select_without_file_columns_for(:avatar)
+    # 
+    # 5. By default, URLs will be set to this pattern:
+    #   /:relative_root/:class/:attachment/:id?style=:style
+    # 
+    # Example:
+    #   /app-root-url/users/avatars/23?style=original
+    # 
+    # The idea here is that to retrieve a file from the database storage, you will need some
+    # controller's code to be executed.
+    #     
+    # Once you pick a controller to use for downloading, you can add this line
+    # to generate the download action for the default URL/action (the plural attachment name),
+    # "avatars" in this example:
+    #   downloads_files_for :user, :avatar
+    # 
+    # Or you can write a download method manually if there are security, logging or other
+    # requirements.
+    # 
+    # If you prefer a different URL for downloading files you can specify that in the model; e.g.:
+    #   has_attached_file :avatar, :storage => :database, :url => '/users/show_avatar/:id/:style'
+    # 
+    # 6. Add a route for the download to the controller which will handle downloads, if necessary.
+    # 
+    # The default URL, /:relative_root/:class/:attachment/:id?style=:style, will be matched by
+    # the default route: :controller/:action/:id
+    # 
+    module Database
+      def self.extended base
+        base.instance_eval do
+          @file_columns = @options[:file_columns]
+          if @url == base.class.default_options[:url]
+            @url = ":relative_root/:class/:attachment/:id?style=:style"
+          end
+        end
+        base.class.interpolations[:relative_root] = lambda do |attachment, style|
+          begin
+            if ActionController::AbstractRequest.respond_to?(:relative_url_root)
+              relative_url_root = ActionController::AbstractRequest.relative_url_root
+            end
+          rescue NameError
+          end
+          if !relative_url_root && ActionController::Base.respond_to?(:relative_url_root)
+            relative_url_root = ActionController::Base.relative_url_root
+          end
+          relative_url_root
+        end
+        ActiveRecord::Base.logger.info("[paperclip] Database Storage Initalized.")
+      end
+
+      def column_for_style style
+        @file_columns[style.to_sym]
+      end
+        
+      def instance_read_file(style)
+        column = column_for_style(style)
+        responds = instance.respond_to?(column)
+        cached = self.instance_variable_get("@_#{column}")
+        return cached if cached
+        # The blob attribute will not be present if select_without_file_columns_for was used
+        instance.reload :select => column if !instance.attribute_present?(column) && !instance.new_record?
+        instance.send(column) if responds
+      end
+
+      def instance_write_file(style, value)
+        setter = :"#{column_for_style(style)}="
+        responds = instance.respond_to?(setter)
+        self.instance_variable_set("@_#{setter.to_s.chop}", value)
+        instance.send(setter, value) if responds
+      end
+
+      def file_contents(style = default_style)
+        instance_read_file(style)
+      end
+      alias_method :data, :file_contents
+
+      def exists?(style = default_style)
+        !file_contents(style).nil?
+      end
+
+      # Returns representation of the data of the file assigned to the given
+      # style, in the format most representative of the current storage.
+      def to_file style = default_style
+        if @queued_for_write[style]
+          @queued_for_write[style]
+        elsif exists?(style)
+          tempfile = Tempfile.new instance_read(:file_name)
+          tempfile.write file_contents(style)
+          tempfile
+        else
+          nil
+        end
+      end
+      alias_method :to_io, :to_file
+
+      def path style = default_style
+        original_filename.nil? ? nil : column_for_style(style)
+      end
+
+      def assign uploaded_file
+
+        # Assign standard metadata attributes and perform post processing as usual
+        super
+
+        # Save the file contents for all styles in ActiveRecord immediately (before save)
+        @queued_for_write.each do |style, file|
+          instance_write_file(style, file.read)
+        end
+        
+        # If we are assigning another Paperclip attachment, then fixup the
+        # filename and content type; necessary since Tempfile is used in to_file
+        if uploaded_file.is_a?(Paperclip::Attachment)
+          instance_write(:file_name,       uploaded_file.instance_read(:file_name))
+          instance_write(:content_type,    uploaded_file.instance_read(:content_type))
+        end
+      end
+
+      def queue_existing_for_delete
+        [:original, *@styles.keys].uniq.each do |style|
+          instance_write_file(style, nil)
+        end
+        instance_write(:file_name, nil)
+        instance_write(:content_type, nil)
+        instance_write(:file_size, nil)
+        instance_write(:updated_at, nil)
+      end
+
+      def flush_writes
+        @queued_for_write = {}
+      end
+
+      def flush_deletes
+        @queued_for_delete = []
+      end
+      
+      module ControllerClassMethods
+        def self.included(base)
+          base.extend(self)
+        end
+        def downloads_files_for(model, attachment)
+          define_method("#{attachment.to_s.pluralize}") do
+            model_record = Object.const_get(model.to_s.camelize.to_sym).find(params[:id])
+            style = params[:style] ? params[:style] : 'original'
+            send_data model_record.send(attachment).file_contents(style),
+                      :filename => model_record.send("#{attachment}_file_name".to_sym),
+                      :type => model_record.send("#{attachment}_content_type".to_sym)
+          end
+        end
+      end
+    end
+
   end
 end
